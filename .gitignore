@@ -1,0 +1,7 @@
+# 3rd party
+node_modules
+
+# Build artifacts
+fo-tooltip.js
+fo-tooltip.d.ts
+fo-tooltip.js.map

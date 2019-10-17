@@ -1,0 +1,48 @@
+{
+  "name": "@phbalance/d3-tooltip",
+  "version": "0.0.0",
+  "description": "Small library for generating svg tooltips using foreignObject.",
+  "main": "fo-tooltip.js",
+  "scripts": {
+    "build": "npm run clean && webpack -p --mode production",
+    "build:dev": "npm run clean && webpack -p --mode development",
+    "clean": "rimraf dist/ fo-tooltip.js fo-tooltip.js.map fo-tooltip.d.ts",
+    "lint": "tslint -p tsconfig.json",
+    "lint:fix": "npm run lint -- --fix",
+    "test": "echo \"No tests specified\"",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phBalance/d3-tooltip.git"
+  },
+  "bugs": {
+    "url": "https://github.com/phBalance/d3-tooltip/issues"
+  },
+  "keywords": [
+    "d3",
+    "tooltip",
+    "foreignObject"
+  ],
+  "author": "Peter Hunnisett <peter@softwarebalm.com> (https://softwarebalm.com)",
+  "private": false,
+  "license": "MIT",
+  "homepage": "https://github.com/phBalance/d3-tooltip#readme",
+  "devDependencies": {
+    "@types/common-tags": "^1.8.0",
+    "@types/d3-selection": "^1.4.1",
+    "np": "^5.0.3",
+    "rimraf": "^3.0.0",
+    "ts-loader": "^5.4.5",
+    "tslint": "^5.19.0",
+    "typescript": "^3.4.5",
+    "webpack": "^4.39.3",
+    "webpack-cli": "^3.3.7"
+  },
+  "dependencies": {
+    "@phbalance/contrast-colour": "0.0.2",
+    "common-tags": "^1.8.0",
+    "d3-selection": "^1.4.0"
+  }
+}
