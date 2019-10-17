@@ -29,9 +29,13 @@
   "private": false,
   "license": "MIT",
   "homepage": "https://github.com/phBalance/d3-tooltip#readme",
+  "peerDependencies": {
+    "d3-selection": "^1.4.0"
+  },
   "devDependencies": {
     "@types/common-tags": "^1.8.0",
     "@types/d3-selection": "^1.4.1",
+    "d3-selection": "^1.4.0",
     "np": "^5.0.3",
     "rimraf": "^3.0.0",
     "ts-loader": "^5.4.5",
@@ -42,7 +46,6 @@
   },
   "dependencies": {
     "@phbalance/contrast-colour": "0.0.2",
-    "common-tags": "^1.8.0",
-    "d3-selection": "^1.4.0"
+    "common-tags": "^1.8.0"
   }
 }
