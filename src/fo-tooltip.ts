@@ -25,6 +25,7 @@ export interface ITooltipBubbleConfig {
 }
 
 // Blink (Chrome) has an issue with foreignObjects and screen zooming (or high density screens). See:
+// tslint:disable-next-line
 // https://bugs.chromium.org/p/chromium/issues/detail?id=738022&q=chrome%20svg%20devicePixelRatio&colspec=ID%20Pri%20M%20Stars%20ReleaseBlock%20Component%20Status%20Owner%20Summary%20OS%20Modified
 // To compensate for this, we need to factor back to CSS pixels if this behaviour is present.
 
@@ -73,7 +74,8 @@ function foreignObjectZoomBugCorrectionFactor(): number {
 	// It would have been nice to use devicePixelRatio, but that doesn't work on Safari.
 	let zoomMultiple = foDivBound.height / (2 * divBound.height);
 
-	// console.error(`fo: ${JSON.stringify(foDivBound.height)} div: ${JSON.stringify(divBound.height)} ratio: ${window.devicePixelRatio} multiple: ${zoomMultiple}`);
+	// console.error(`fo: ${JSON.stringify(foDivBound.height)} div: ${JSON.stringify(divBound.height)}
+	// 	ratio: ${window.devicePixelRatio} multiple: ${zoomMultiple}`);
 
 	// FIXME: Firefox calculates things incorrectly when zoom < 80%. A bug for sure. Might have to do with their poor text kerning.
 	//        I can't see an easy way to work around this. Using the work around for chrome fixes helps at some, but not all, zoom values.
@@ -88,7 +90,7 @@ function foreignObjectZoomBugCorrectionFactor(): number {
 }
 
 // Expected to be used with d3.
-// NOTE: You must wrap your html in a <div>, since it's assumed there is one, so that calculations of size can be done. Also, it gives a good anchor for applying
+// NOTE: You must wrap your html in a <div> so that calculations of size can be done. Also, it gives a good anchor for applying
 //       padding, and other styling, can be applied via CSS.
 export class Tooltip<DatumType> {
 
