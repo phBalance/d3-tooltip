@@ -2,6 +2,8 @@
 node_modules
 
 # Build artifacts
-fo-tooltip.js
 fo-tooltip.d.ts
+fo-tooltip.js
 fo-tooltip.js.map
+fo-tooltip.es6.js
+fo-tooltip.es6.js.map
