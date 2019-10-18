@@ -2,6 +2,20 @@ import { oneLine } from "common-tags";
 import { mouse } from "d3-selection";
 import { chooseHighestContrastColour } from "@phbalance/contrast-colour";
 
+export interface ITooltipConfigDataFn<DatumType> {
+	(d: DatumType): string | undefined;
+}
+
+export interface ITooltipConfig<DatumType> {
+	bubbleWidth: number;
+	bubbleHeight: number;
+	chartWidth: number;
+	chartHeight: number;
+	backgroundColour: string;
+	backgroundOpacity: number;
+	getData: ITooltipConfigDataFn<DatumType>;
+};
+
 // Blink (Chrome) has an issue with foreignObjects and screen zooming (or high density screens). See:
 // https://bugs.chromium.org/p/chromium/issues/detail?id=738022&q=chrome%20svg%20devicePixelRatio&colspec=ID%20Pri%20M%20Stars%20ReleaseBlock%20Component%20Status%20Owner%20Summary%20OS%20Modified
 // To compensate for this, we need to factor back to CSS pixels if this behaviour is present.
@@ -68,9 +82,9 @@ function foreignObjectZoomBugCorrectionFactor(): number {
 // Expected to be used with d3.
 // NOTE: You must wrap your html in a <div>, since it's assumed there is one, so that calculations of size can be done. Also, it gives a good anchor for applying
 //       padding, and other styling, can be applied via CSS.
-export class Tooltip {
+export class Tooltip<DatumType> {
 
-	public static getBoundingHeight(content: SVGGraphicsElement, rootNode: SVGSVGElement): number {
+	private static getBoundingHeight(content: SVGGraphicsElement, rootNode: SVGSVGElement): number {
 		// Get size in element based coords
 		const boundingRect = content.getBoundingClientRect();
 
@@ -177,42 +191,47 @@ export class Tooltip {
 	private tipOffset = 50;
 	private tip = {w: (3 / 4 * 50), h: 10};
 
-	private readonly tooltipArea;
-	private readonly rootSelection;
-	private readonly bubbleWidth;  // FIXME: dynamic / CSS based?
-	private readonly bubbleHeight;
-	private readonly chartWidth;
-	private readonly chartHeight;
-	private readonly bubbleOpacity;
-	private readonly bubbleBackground;
-	private readonly bubbleStroke;
-	private readonly roundedBubble;
+	private readonly tooltipArea: any; // FIXME: Tooltip typing
+	private readonly rootSelection: any; // FIXME: Tooltip typing
+	private readonly bubbleWidth: number;
+	private readonly bubbleHeight: number;
+	private readonly chartWidth: number;
+	private readonly chartHeight: number;
+	private readonly bubbleOpacity: number;
+	private readonly bubbleBackground: string;
+	private readonly bubbleStroke: string;
+	private readonly roundedBubble: boolean;
+	private readonly getData: ITooltipConfigDataFn<DatumType>;
 	private calculatedHeight: number;
 
 	// If bubbleHeight < 0 then go with a dynamically calculated bubble height.
-	constructor(rootSelection, bubbleWidth: number, bubbleHeight: number, chartWidth: number, chartHeight: number, backgroundColour, backgroundOpacity) {
-		this.rootSelection = rootSelection;
-		this.bubbleWidth = bubbleWidth;
-		this.bubbleHeight = bubbleHeight;
-		this.chartWidth = chartWidth;
-		this.chartHeight = chartHeight;
-		this.bubbleBackground = backgroundColour;
-		this.bubbleOpacity = backgroundOpacity;
-		this.bubbleStroke = chooseHighestContrastColour(backgroundColour, backgroundOpacity);
-		this.roundedBubble = true;
-		this.calculatedHeight = 0;
-
+	constructor(rootSelection: any, config: ITooltipConfig<DatumType>) {
 		this.tooltipArea = rootSelection
 			.append("g")
 				.attr("class", "tooltip-group");
+
+		this.rootSelection = rootSelection;
+		this.bubbleWidth = config.bubbleWidth;
+		this.bubbleHeight = config.bubbleHeight;
+		this.chartWidth = config.chartWidth;
+		this.chartHeight = config.chartHeight;
+		this.bubbleBackground = config.backgroundColour;
+		this.bubbleOpacity = config.backgroundOpacity;
+		this.bubbleStroke = chooseHighestContrastColour(config.backgroundColour, config.backgroundOpacity);
+		this.roundedBubble = true;
+		this.getData = config.getData;
+
+		this.calculatedHeight = 0
 	}
 
 	public mouseoverHandler() {
 		const This = this;
 
 		// NOTE: This function will be called with different "this" - it is not the object this
-		return function(d) {
-			if(d && d.data && d.data.tooltip) {
+		return function(d: DatumType) {
+			// console.log(`d3Event: ${d3.event}`);
+			const tooltip = This.getData(d);
+			if(tooltip) {
 				let [x, y] = mouse(This.rootSelection.node() as any);
 				// console.log(`mouseover event at ${x}, ${y}`);
 
@@ -222,10 +241,11 @@ export class Tooltip {
 						.attr("pointer-events", "none")
 						.attr("width", This.bubbleWidth)
 						.attr("height", 1) // Firefox, at this point, requires height >= 1 to calculate children correctly.
-						.html(d.data.tooltip);
+						.html(tooltip);
 
-				const calculatedHeight = This.bubbleHeight >= 0 ? This.bubbleHeight : Tooltip.getBoundingHeight(testContent.select("div").node(), This.rootSelection.node());
-				This.calculatedHeight = calculatedHeight;
+				This.calculatedHeight = This.bubbleHeight >= 0 
+					? This.bubbleHeight 
+					: Tooltip.getBoundingHeight(testContent.select("div").node() as SVGGraphicsElement, This.rootSelection.node());
 
 				// Position the tooltip to keep inside the chart
 				let invertVert = false;
@@ -235,15 +255,15 @@ export class Tooltip {
 					invertHoriz = true;
 				}
 
-				if(y + calculatedHeight + This.tip.h > This.chartHeight) {
-					y = y - calculatedHeight;
+				if(y + This.calculatedHeight + This.tip.h > This.chartHeight) {
+					y = y - This.calculatedHeight;
 					invertVert = true;
 				}
 
 				testContent
 					.attr("x", x + (invertHoriz ? This.tip.w : -This.tip.w))
 					.attr("y", y + (invertVert ? -This.tip.h : +This.tip.h))
-					.attr("height", calculatedHeight);
+					.attr("height", This.calculatedHeight);
 
 				if(This.roundedBubble) {
 					This.tooltipArea
@@ -251,7 +271,7 @@ export class Tooltip {
 							.attr("class", "svg-tooltip-outline")
 							.attr("pointer-events", "none")
 							.attr("transform", `translate(${(x + (invertHoriz ? This.tip.w : -This.tip.w))},${(y + (invertVert ? -This.tip.h : +This.tip.h))})`)
-							.attr("d", Tooltip.genBubblePath(This.bubbleWidth, calculatedHeight, This.tipOffset, This.tip.w, This.tip.h, invertVert, invertHoriz))
+							.attr("d", Tooltip.genBubblePath(This.bubbleWidth, This.calculatedHeight, This.tipOffset, This.tip.w, This.tip.h, invertVert, invertHoriz))
 							.attr("fill", This.bubbleBackground)
 							.attr("opacity", This.bubbleOpacity)
 							.attr("stroke", This.bubbleStroke)
@@ -263,8 +283,8 @@ export class Tooltip {
 							.attr("pointer-events", "none")
 							.attr("transform", `translate(${(x + (invertHoriz ? This.tip.w : -This.tip.w))},${(y + (invertVert ? -This.tip.h : +This.tip.h))})`)
 							.attr("width", This.bubbleWidth)
-							.attr("height", calculatedHeight)
-							.attr("points", Tooltip.genBubblePolyPoints(This.bubbleWidth, calculatedHeight, This.tipOffset, This.tip.w, This.tip.h, invertVert, invertHoriz))
+							.attr("height", This.calculatedHeight)
+							.attr("points", Tooltip.genBubblePolyPoints(This.bubbleWidth, This.calculatedHeight, This.tipOffset, This.tip.w, This.tip.h, invertVert, invertHoriz))
 							.attr("fill", This.bubbleBackground)
 							.attr("opacity", This.bubbleOpacity);
 				}
@@ -276,8 +296,9 @@ export class Tooltip {
 		const This = this;
 
 		// NOTE: This function will be called with different "this" - it is not the object this
-		return function(d) {
-			if(d && d.data && d.data.tooltip) {
+		return function(d: DatumType) {
+			const tooltip = This.getData(d);
+			if(tooltip) {
 				let [x, y] = mouse(This.rootSelection.node() as any);
 				// console.log(`mousemove event at ${x}, ${y}`);
 
@@ -320,8 +341,9 @@ export class Tooltip {
 		const This = this;
 
 		// NOTE: This function will be called with different "this" which is not the object this
-		return function(d) {
-			if(d && d.data && d.data.tooltip) {
+		return function(d: DatumType) {
+			const tooltip = This.getData(d);
+			if(tooltip) {
 				const [x, y] = mouse(This.rootSelection.node() as any);
 				// console.log(`mouseout event at ${x}, ${y}`);
 
