@@ -26,13 +26,21 @@ const selection = svg
     .selectAll("rect")
     .data(yourData);
 
-const tooltipOpacity = 0.9;
-const tooltipBackground = "#F8F8F8";
+const tooltipConfig = {
+    bubbleWidth: width / 3,
+    bubbleHeight: -1, // Let tooltip dynamically figure out the height for you.
+    chartWidth: width,
+    chartHeight: width,
+    backgroundColour: "#F8F8F8",
+    backgroundOpacity: 0.9,
+    getData: (d) => d.tooltip, // Assuming tooltip data is located at d.tooltip
+};
 
-const tooltip = new Tooltip(svg, width / 3, -1, width, width, tooltipBackground, tooltipOpacity);
+const tooltip = new Tooltip<IFlexibleBarChartDatum>(svg, tooltipConfig);
 const tooltipMouseover = tooltip.mouseoverHandler();
 const tooltipMouseout = tooltip.mouseoutHandler();
 const tooltipMousemove = tooltip.mousemoveHandler();
+
 
 // Bind it to your d3 selection that you want to show tooltips.
 selection
@@ -44,9 +52,9 @@ selection
 
 ### API
 
-The generated tooltip object contains 3 event handlers. You will want to bind at least the mouseover and mouseout handlers, but if you don't want your tooltip to follow the mouse around inside the selection, you don't need to bind it.
+The generated tooltip object contains 3 event handlers. You will want to bind at least the mouseover and mouseout handlers, but if you don't want your tooltip to follow the mouse around inside the selection, you don't need to bind it. If you don't being the mousemove, the tooltip will be pointing to the spot you entered the selection.
 
-When an event handler is called, it checks the d.data.tooltip passed in via d3. It then interprets the tooltip as HTML.
+When an event handler is called, the getData function that was passed into the `tooltipConfig` is called to find the tooltip HTML.
 
 ### Reporting Issues
 
