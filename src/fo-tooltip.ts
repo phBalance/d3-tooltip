@@ -14,6 +14,16 @@ export interface ITooltipConfig<DatumType> {
 	getData: ITooltipConfigDataFn<DatumType>;
 }
 
+export interface ITooltipBubbleConfig {
+	polyWidth: number;
+	polyHeight: number;
+	tipOffset: number;
+	tipWidth: number;
+	tipHeight: number;
+	pointDown: boolean;
+	tipOnRight: boolean;
+}
+
 // Blink (Chrome) has an issue with foreignObjects and screen zooming (or high density screens). See:
 // https://bugs.chromium.org/p/chromium/issues/detail?id=738022&q=chrome%20svg%20devicePixelRatio&colspec=ID%20Pri%20M%20Stars%20ReleaseBlock%20Component%20Status%20Owner%20Summary%20OS%20Modified
 // To compensate for this, we need to factor back to CSS pixels if this behaviour is present.
@@ -63,7 +73,7 @@ function foreignObjectZoomBugCorrectionFactor(): number {
 	// It would have been nice to use devicePixelRatio, but that doesn't work on Safari.
 	let zoomMultiple = foDivBound.height / (2 * divBound.height);
 
-	console.error(`fo: ${JSON.stringify(foDivBound.height)} div: ${JSON.stringify(divBound.height)} ratio: ${window.devicePixelRatio} multiple: ${zoomMultiple}`);
+	// console.error(`fo: ${JSON.stringify(foDivBound.height)} div: ${JSON.stringify(divBound.height)} ratio: ${window.devicePixelRatio} multiple: ${zoomMultiple}`);
 
 	// FIXME: Firefox calculates things incorrectly when zoom < 80%. A bug for sure. Might have to do with their poor text kerning.
 	//        I can't see an easy way to work around this. Using the work around for chrome fixes helps at some, but not all, zoom values.
@@ -111,75 +121,76 @@ export class Tooltip<DatumType> {
 
 	// Generate a tooltip bubble from a polygon. This generates the points required for the polygon
 	// based on where the bubble should be (i.e. tip pointing up/down and tip on left or right side of the bubble.)
-	private static genBubblePolyPoints(polyWidth: number, polyHeight: number, tipOffset: number, tipWidth: number, tipHeight: number, pointDown: boolean, tipOnRight: boolean): string {
-		if(!pointDown && !tipOnRight) {
-			return `0,0 0,${polyHeight} ${polyWidth},${polyHeight} ${polyWidth},0 ${tipOffset},0 ${tipWidth},${-tipHeight} ${tipOffset / 2},0`;
-		} else if(pointDown && !tipOnRight) {
-			return `0,0 0,${polyHeight} ${tipOffset / 2},${polyHeight} ${tipWidth},${tipHeight + polyHeight} ${tipOffset},${polyHeight} ${polyWidth},${polyHeight} ${polyWidth},0`;
-		} else if(!pointDown && tipOnRight) {
-			return `0,0 0,${polyHeight} ${polyWidth},${polyHeight} ${polyWidth},0 ${polyWidth - tipOffset / 2},0 ${polyWidth - tipWidth},${-tipHeight} ${polyWidth - tipOffset},0`;
+	private static genBubblePolyPoints(config: ITooltipBubbleConfig): string {
+		if(!config.pointDown && !config.tipOnRight) {
+			return `0,0 0,${config.polyHeight} ${config.polyWidth},${config.polyHeight} ${config.polyWidth},0 ${config.tipOffset},0 ${config.tipWidth},${-config.tipHeight} ${config.tipOffset / 2},0`;
+		} else if(config.pointDown && !config.tipOnRight) {
+			return `0,0 0,${config.polyHeight} ${config.tipOffset / 2},${config.polyHeight} ${config.tipWidth},${config.tipHeight + config.polyHeight} ${config.tipOffset},${config.polyHeight} ${config.polyWidth},${config.polyHeight} ${config.polyWidth},0`;
+		} else if(!config.pointDown && config.tipOnRight) {
+			return `0,0 0,${config.polyHeight} ${config.polyWidth},${config.polyHeight} ${config.polyWidth},0 ${config.polyWidth - config.tipOffset / 2},0 ${config.polyWidth - config.tipWidth},${-config.tipHeight} ${config.polyWidth - config.tipOffset},0`;
 		} else {
-			return `0,0 0,${polyHeight} ${polyWidth - tipOffset},${polyHeight} ${polyWidth - tipWidth},${tipHeight + polyHeight} ${polyWidth - tipOffset / 2},${polyHeight} ${polyWidth},${polyHeight} ${polyWidth},0`;
+			return `0,0 0,${config.polyHeight} ${config.polyWidth - config.tipOffset},${config.polyHeight} ${config.polyWidth - config.tipWidth},${config.tipHeight + config.polyHeight} ${config.polyWidth - config.tipOffset / 2},${config.polyHeight} ${config.polyWidth},${config.polyHeight} ${config.polyWidth},0`;
 		}
 	}
 
-	private static genBubblePath(polyWidth: number, polyHeight: number, tipOffset: number, tipWidth: number, tipHeight: number, pointDown: boolean, tipOnRight: boolean): string {
-		const radius = 10; // FIXME: modify on polyWidth and polyHeight
+	private static genBubblePath(config: ITooltipBubbleConfig): string {
+		const smallerDim = Math.min(config.polyHeight, config.polyWidth);
+		const radius = smallerDim < 100 ? smallerDim / 5 : 10;
 
-		if(!pointDown && !tipOnRight) {
+		if(!config.pointDown && !config.tipOnRight) {
 			return oneLine`
 				M 0 ${radius}
-				L 0 ${polyHeight - radius}
-				Q 0 ${polyHeight}, ${radius} ${polyHeight}
-				L ${polyWidth - radius} ${polyHeight}
-				Q ${polyWidth} ${polyHeight}, ${polyWidth} ${polyHeight - radius}
-				L ${polyWidth} ${radius}
-				Q ${polyWidth} 0, ${polyWidth - radius} 0
-				L ${tipOffset} 0
-				L ${tipWidth} ${-tipHeight}
-				L ${tipOffset / 2} 0
+				L 0 ${config.polyHeight - radius}
+				Q 0 ${config.polyHeight}, ${radius} ${config.polyHeight}
+				L ${config.polyWidth - radius} ${config.polyHeight}
+				Q ${config.polyWidth} ${config.polyHeight}, ${config.polyWidth} ${config.polyHeight - radius}
+				L ${config.polyWidth} ${radius}
+				Q ${config.polyWidth} 0, ${config.polyWidth - radius} 0
+				L ${config.tipOffset} 0
+				L ${config.tipWidth} ${-config.tipHeight}
+				L ${config.tipOffset / 2} 0
 				L ${radius} 0
 				Q 0 0, 0 ${radius}`;
-		} else if(pointDown && !tipOnRight) {
+		} else if(config.pointDown && !config.tipOnRight) {
 			return oneLine`
 				M 0 ${radius}
-				L 0 ${polyHeight - radius}
-				Q 0 ${polyHeight}, ${radius} ${polyHeight}
-				L ${tipOffset / 2} ${polyHeight}
-				L ${tipWidth} ${tipHeight + polyHeight}
-				L ${tipOffset} ${polyHeight}
-				L ${polyWidth - radius} ${polyHeight}
-				Q ${polyWidth} ${polyHeight}, ${polyWidth} ${polyHeight - radius}
-				L ${polyWidth} ${radius}
-				Q ${polyWidth} 0, ${polyWidth - radius} 0
+				L 0 ${config.polyHeight - radius}
+				Q 0 ${config.polyHeight}, ${radius} ${config.polyHeight}
+				L ${config.tipOffset / 2} ${config.polyHeight}
+				L ${config.tipWidth} ${config.tipHeight + config.polyHeight}
+				L ${config.tipOffset} ${config.polyHeight}
+				L ${config.polyWidth - radius} ${config.polyHeight}
+				Q ${config.polyWidth} ${config.polyHeight}, ${config.polyWidth} ${config.polyHeight - radius}
+				L ${config.polyWidth} ${radius}
+				Q ${config.polyWidth} 0, ${config.polyWidth - radius} 0
 				L ${radius} 0
 				Q 0 0, 0 ${radius}`;
-		} else if(!pointDown && tipOnRight) {
+		} else if(!config.pointDown && config.tipOnRight) {
 			return oneLine`
 				M 0 ${radius}
-				L 0 ${polyHeight - radius}
-				Q 0 ${polyHeight}, ${radius} ${polyHeight}
-				L ${polyWidth - radius} ${polyHeight}
-				Q ${polyWidth} ${polyHeight}, ${polyWidth} ${polyHeight - radius}
-				L ${polyWidth} ${radius}
-				Q ${polyWidth} 0, ${polyWidth - radius} 0
-				L ${polyWidth - tipOffset / 2} 0
-				L ${polyWidth - tipWidth} ${-tipHeight}
-				L ${polyWidth - tipOffset} 0
+				L 0 ${config.polyHeight - radius}
+				Q 0 ${config.polyHeight}, ${radius} ${config.polyHeight}
+				L ${config.polyWidth - radius} ${config.polyHeight}
+				Q ${config.polyWidth} ${config.polyHeight}, ${config.polyWidth} ${config.polyHeight - radius}
+				L ${config.polyWidth} ${radius}
+				Q ${config.polyWidth} 0, ${config.polyWidth - radius} 0
+				L ${config.polyWidth - config.tipOffset / 2} 0
+				L ${config.polyWidth - config.tipWidth} ${-config.tipHeight}
+				L ${config.polyWidth - config.tipOffset} 0
 				L ${radius} 0
 				Q 0 0, 0 ${radius}`;
 		} else { // pointDown && tipOnRight
 			return oneLine`
 				M 0 ${radius}
-				L 0 ${polyHeight - radius}
-				Q 0 ${polyHeight}, ${radius} ${polyHeight}
-				L ${polyWidth - tipOffset} ${polyHeight}
-				L ${polyWidth - tipWidth} ${tipHeight + polyHeight}
-				L ${polyWidth - tipOffset / 2} ${polyHeight}
-				L ${polyWidth - radius} ${polyHeight}
-				Q ${polyWidth} ${polyHeight}, ${polyWidth} ${polyHeight - radius}
-				L ${polyWidth} ${radius}
-				Q ${polyWidth} 0, ${polyWidth - radius} 0
+				L 0 ${config.polyHeight - radius}
+				Q 0 ${config.polyHeight}, ${radius} ${config.polyHeight}
+				L ${config.polyWidth - config.tipOffset} ${config.polyHeight}
+				L ${config.polyWidth - config.tipWidth} ${config.tipHeight + config.polyHeight}
+				L ${config.polyWidth - config.tipOffset / 2} ${config.polyHeight}
+				L ${config.polyWidth - radius} ${config.polyHeight}
+				Q ${config.polyWidth} ${config.polyHeight}, ${config.polyWidth} ${config.polyHeight - radius}
+				L ${config.polyWidth} ${radius}
+				Q ${config.polyWidth} 0, ${config.polyWidth - radius} 0
 				L ${radius} 0
 				Q 0 0, 0 ${radius}`;
 		}
@@ -269,7 +280,7 @@ export class Tooltip<DatumType> {
 							.attr("class", "svg-tooltip-outline")
 							.attr("pointer-events", "none")
 							.attr("transform", `translate(${(x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))},${(y + (invertVert ? -objThis.tip.h : +objThis.tip.h))})`)
-							.attr("d", Tooltip.genBubblePath(objThis.bubbleWidth, objThis.calculatedHeight, objThis.tipOffset, objThis.tip.w, objThis.tip.h, invertVert, invertHoriz))
+							.attr("d", Tooltip.genBubblePath(objThis.generateBubbleconfig(invertVert, invertHoriz)))
 							.attr("fill", objThis.bubbleBackground)
 							.attr("opacity", objThis.bubbleOpacity)
 							.attr("stroke", objThis.bubbleStroke)
@@ -282,7 +293,7 @@ export class Tooltip<DatumType> {
 							.attr("transform", `translate(${(x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))},${(y + (invertVert ? -objThis.tip.h : +objThis.tip.h))})`)
 							.attr("width", objThis.bubbleWidth)
 							.attr("height", objThis.calculatedHeight)
-							.attr("points", Tooltip.genBubblePolyPoints(objThis.bubbleWidth, objThis.calculatedHeight, objThis.tipOffset, objThis.tip.w, objThis.tip.h, invertVert, invertHoriz))
+							.attr("points", Tooltip.genBubblePolyPoints(objThis.generateBubbleconfig(invertVert, invertHoriz)))
 							.attr("fill", objThis.bubbleBackground)
 							.attr("opacity", objThis.bubbleOpacity);
 				}
@@ -318,12 +329,12 @@ export class Tooltip<DatumType> {
 				if(objThis.roundedBubble) {
 					objThis.tooltipArea
 						.select("path")
-						.attr("d", Tooltip.genBubblePath(objThis.bubbleWidth, calculatedHeight, objThis.tipOffset, objThis.tip.w, objThis.tip.h, invertVert, invertHoriz))
+						.attr("d", Tooltip.genBubblePath(objThis.generateBubbleconfig(invertVert, invertHoriz)))
 						.attr("transform", `translate(${(x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))},${(y + (invertVert ? -objThis.tip.h : objThis.tip.h))})`);
 				} else {
 					objThis.tooltipArea
 						.select("polygon")
-						.attr("points", Tooltip.genBubblePolyPoints(objThis.bubbleWidth, calculatedHeight, objThis.tipOffset, objThis.tip.w, objThis.tip.h, invertVert, invertHoriz))
+						.attr("points", Tooltip.genBubblePolyPoints(objThis.generateBubbleconfig(invertVert, invertHoriz)))
 						.attr("transform", `translate(${(x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))},${(y + (invertVert ? -objThis.tip.h : objThis.tip.h))})`);
 				}
 
@@ -361,6 +372,18 @@ export class Tooltip<DatumType> {
 						.remove();
 				}
 			}
+		};
+	}
+
+	private generateBubbleconfig(invertVert: boolean, invertHoriz: boolean): ITooltipBubbleConfig {
+		return {
+			pointDown: invertVert,
+			polyHeight: this.calculatedHeight,
+			polyWidth: this.bubbleWidth,
+			tipHeight: this.tip.h,
+			tipOffset: this.tipOffset,
+			tipOnRight: invertHoriz,
+			tipWidth: this.tip.w,
 		};
 	}
 }
