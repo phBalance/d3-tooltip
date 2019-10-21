@@ -14,7 +14,7 @@ npm install --save @phbalance/d3-tooltip
 ### Use
 
 ```
-import { Tooltip } from "@phbalance/d3-tooltip";
+import { ITooltipConfig, Tooltip } from "@phbalance/d3-tooltip";
 
 ...
 
@@ -26,15 +26,18 @@ const selection = svg
     .selectAll("rect")
     .data(yourData);
 
-const tooltipConfig = {
+const tooltipConfig: ITooltipConfig<IFlexibleBarChartDatum> = {
     rounded: true,
-    bubbleWidth: width / 3,
-    bubbleHeight: -1, // Let tooltip dynamically figure out the height for you.
+    bubbleWidth: bubbleWidth,
+    bubbleHeight: -1,
+    bubbleStroke: "red",
+    bubbleStrokeWidth: bubbleWidth / 150,
+    bubbleTip: {tipOffset: (3 / 4 * bubbleWidth / 9), h: 10, edgeOffset: bubbleWidth / 9},
     chartWidth: width,
     chartHeight: width,
     backgroundColour: "#F8F8F8",
     backgroundOpacity: 0.9,
-    getData: (d) => d.tooltip, // Assuming tooltip data is located at d.tooltip
+    getData: (d: IFlexibleBarChartDatum) => d.tooltip,
 };
 
 const tooltip = new Tooltip<IFlexibleBarChartDatum>(svg, tooltipConfig);
@@ -42,12 +45,11 @@ const tooltipMouseover = tooltip.mouseoverHandler();
 const tooltipMouseout = tooltip.mouseoutHandler();
 const tooltipMousemove = tooltip.mousemoveHandler();
 
-
-// Bind it to your d3 selection that you want to show tooltips.
+// Bind it to the d3 selection(s) that you want to show tooltips.
 selection
     .enter()
         .on("mouseover", tooltipMouseover)
-        .on("mouseout", tooltipMouseout)
+        .on("mouseout",  tooltipMouseout)
         .on("mousemove", tooltipMousemove);
 ```
 

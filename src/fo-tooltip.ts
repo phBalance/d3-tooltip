@@ -6,12 +6,20 @@ export type ITooltipConfigDataFn<DatumType> = (d: DatumType) => string | undefin
 
 export interface ITooltipConfig<DatumType> {
 	rounded: boolean;
+
 	bubbleWidth: number;
 	bubbleHeight: number;
+	bubbleTip?: {tipOffset: number, h: number, edgeOffset: number}; // Tip dimensions are not included in bubbleHeight or bubbleWidth
+
+	bubbleStroke?: string; // Will be biggest contrast colour if not provided
+	bubbleStrokeWidth?: number; // bubbleWidth / 100 if not provided.
+
 	chartWidth: number;
 	chartHeight: number;
+
 	backgroundColour: string;
 	backgroundOpacity: number;
+
 	getData: ITooltipConfigDataFn<DatumType>;
 }
 
@@ -19,7 +27,7 @@ export interface ITooltipBubbleConfig {
 	polyWidth: number;
 	polyHeight: number;
 	tipOffset: number;
-	tipWidth: number;
+	tipPointOffset: number;
 	tipHeight: number;
 	pointDown: boolean;
 	tipOnRight: boolean;
@@ -123,9 +131,6 @@ export class Tooltip<DatumType> {
 		return bounds;
 	}
 
-	private readonly tipOffset = 50;
-	private readonly tip = {w: (3 / 4 * 50), h: 10};
-
 	private readonly tooltipArea: Selection<SVGElement, unknown, null, undefined>;
 	private readonly rootSelection: Selection<SVGSVGElement, unknown, null, undefined>;
 	private readonly bubbleWidth: number;
@@ -135,6 +140,8 @@ export class Tooltip<DatumType> {
 	private readonly bubbleOpacity: number;
 	private readonly bubbleBackground: string;
 	private readonly bubbleStroke: string;
+	private readonly bubbleStrokeWidth: string;
+	private readonly bubbleTip: {tipOffset: number, h: number, edgeOffset: number};
 	private readonly bubble: ITooltipBubble;
 	private readonly getData: ITooltipConfigDataFn<DatumType>;
 
@@ -143,19 +150,23 @@ export class Tooltip<DatumType> {
 
 	// If bubbleHeight < 0 then go with a dynamically calculated bubble height.
 	constructor(rootSelection: Selection<SVGSVGElement, unknown, null, undefined>, config: ITooltipConfig<DatumType>) {
+		this.rootSelection = rootSelection;
 		this.tooltipArea = rootSelection
 			.append("g")
 				.attr("class", "tooltip-group");
 
-		this.rootSelection = rootSelection;
-		this.bubbleWidth = config.bubbleWidth;
-		this.bubbleHeight = config.bubbleHeight;
 		this.chartWidth = config.chartWidth;
 		this.chartHeight = config.chartHeight;
+
+		this.bubbleWidth = config.bubbleWidth;
+		this.bubbleHeight = config.bubbleHeight;
 		this.bubbleBackground = config.backgroundColour;
 		this.bubbleOpacity = config.backgroundOpacity;
-		this.bubbleStroke = chooseHighestContrastColour(config.backgroundColour, config.backgroundOpacity);
+		this.bubbleStroke = config.bubbleStroke || chooseHighestContrastColour(config.backgroundColour, config.backgroundOpacity);
+		this.bubbleStrokeWidth = (config.bubbleStrokeWidth || (this.bubbleWidth / 100)).toString();
 		this.bubble = config.rounded ? ROUNDED_BUBBLE : SQUARE_BUBBLE;
+		this.bubbleTip = Object.assign({tipOffset: (3 / 4 * 50), h: 10, edgeOffset: 50}, config.bubbleTip);
+
 		this.getData = config.getData;
 
 		this.calculatedHeight = 0;
@@ -240,10 +251,10 @@ export class Tooltip<DatumType> {
 			pointDown: invertVert,
 			polyHeight: this.calculatedHeight, // excluding tip
 			polyWidth: this.calculatedWidth,
-			tipHeight: this.tip.h,
-			tipOffset: this.tipOffset,
+			tipHeight: this.bubbleTip.h,
+			tipOffset: this.bubbleTip.edgeOffset,
 			tipOnRight: invertHoriz,
-			tipWidth: this.tip.w,
+			tipPointOffset: this.bubbleTip.tipOffset,
 		};
 	}
 
@@ -261,7 +272,7 @@ export class Tooltip<DatumType> {
 				.attr("fill", this.bubbleBackground)
 				.attr("opacity", this.bubbleOpacity)
 				.attr("stroke", this.bubbleStroke)
-				.attr("stroke-width", this.bubbleWidth / 100);
+				.attr("stroke-width", this.bubbleStrokeWidth);
 	}
 
 	// Position the tooltip to keep inside the chart
@@ -274,7 +285,7 @@ export class Tooltip<DatumType> {
 			invertHoriz = true;
 		}
 
-		if(y + this.calculatedHeight + this.tip.h > this.chartHeight) {
+		if(y + this.calculatedHeight + this.bubbleTip.h > this.chartHeight) {
 			y = y - this.calculatedHeight;
 			invertVert = true;
 		}
@@ -282,12 +293,12 @@ export class Tooltip<DatumType> {
 		this.tooltipArea
 			.select("path")
 			.attr("d", this.bubble.outline(this.generateBubbleConfig(invertVert, invertHoriz)))
-			.attr("transform", `translate(${(x + (invertHoriz ? this.tip.w : -this.tip.w))},${(y + (invertVert ? -this.tip.h : this.tip.h))})`);
+			.attr("transform", `translate(${(x + (invertHoriz ? this.bubbleTip.tipOffset : -this.bubbleTip.tipOffset))},${(y + (invertVert ? -this.bubbleTip.h : this.bubbleTip.h))})`);
 
 		this.tooltipArea
 			.select("foreignObject")
-			.attr("x", x + (invertHoriz ? this.tip.w : -this.tip.w))
-			.attr("y", y + (invertVert ? -this.tip.h : this.tip.h));
+			.attr("x", x + (invertHoriz ? this.bubbleTip.tipOffset : -this.bubbleTip.tipOffset))
+			.attr("y", y + (invertVert ? -this.bubbleTip.h : this.bubbleTip.h));
 	}
 }
 
@@ -310,7 +321,7 @@ const ROUNDED_BUBBLE: ITooltipBubble = {
 				L ${config.polyWidth} ${radius}
 				Q ${config.polyWidth} 0, ${config.polyWidth - radius} 0
 				L ${config.tipOffset} 0
-				L ${config.tipWidth} ${-config.tipHeight}
+				L ${config.tipPointOffset} ${-config.tipHeight}
 				L ${config.tipOffset / 2} 0
 				L ${radius} 0
 				Q 0 0, 0 ${radius}`;
@@ -320,7 +331,7 @@ const ROUNDED_BUBBLE: ITooltipBubble = {
 				L 0 ${config.polyHeight - radius}
 				Q 0 ${config.polyHeight}, ${radius} ${config.polyHeight}
 				L ${config.tipOffset / 2} ${config.polyHeight}
-				L ${config.tipWidth} ${config.tipHeight + config.polyHeight}
+				L ${config.tipPointOffset} ${config.tipHeight + config.polyHeight}
 				L ${config.tipOffset} ${config.polyHeight}
 				L ${config.polyWidth - radius} ${config.polyHeight}
 				Q ${config.polyWidth} ${config.polyHeight}, ${config.polyWidth} ${config.polyHeight - radius}
@@ -338,7 +349,7 @@ const ROUNDED_BUBBLE: ITooltipBubble = {
 				L ${config.polyWidth} ${radius}
 				Q ${config.polyWidth} 0, ${config.polyWidth - radius} 0
 				L ${config.polyWidth - config.tipOffset / 2} 0
-				L ${config.polyWidth - config.tipWidth} ${-config.tipHeight}
+				L ${config.polyWidth - config.tipPointOffset} ${-config.tipHeight}
 				L ${config.polyWidth - config.tipOffset} 0
 				L ${radius} 0
 				Q 0 0, 0 ${radius}`;
@@ -348,7 +359,7 @@ const ROUNDED_BUBBLE: ITooltipBubble = {
 				L 0 ${config.polyHeight - radius}
 				Q 0 ${config.polyHeight}, ${radius} ${config.polyHeight}
 				L ${config.polyWidth - config.tipOffset} ${config.polyHeight}
-				L ${config.polyWidth - config.tipWidth} ${config.tipHeight + config.polyHeight}
+				L ${config.polyWidth - config.tipPointOffset} ${config.tipHeight + config.polyHeight}
 				L ${config.polyWidth - config.tipOffset / 2} ${config.polyHeight}
 				L ${config.polyWidth - radius} ${config.polyHeight}
 				Q ${config.polyWidth} ${config.polyHeight}, ${config.polyWidth} ${config.polyHeight - radius}
@@ -369,7 +380,7 @@ const SQUARE_BUBBLE: ITooltipBubble = {
 				L ${config.polyWidth} ${config.polyHeight}
 				L ${config.polyWidth} 0
 				L ${config.tipOffset} 0
-				L ${config.tipWidth} ${-config.tipHeight}
+				L ${config.tipPointOffset} ${-config.tipHeight}
 				L ${config.tipOffset / 2} 0
 				L 0 0`;
 		} else if(config.pointDown && !config.tipOnRight) {
@@ -377,7 +388,7 @@ const SQUARE_BUBBLE: ITooltipBubble = {
 				M 0 0
 				L 0 ${config.polyHeight}
 				L ${config.tipOffset / 2} ${config.polyHeight}
-				L ${config.tipWidth} ${config.tipHeight + config.polyHeight}
+				L ${config.tipPointOffset} ${config.tipHeight + config.polyHeight}
 				L ${config.tipOffset} ${config.polyHeight}
 				L ${config.polyWidth} ${config.polyHeight}
 				L ${config.polyWidth} 0
@@ -389,7 +400,7 @@ const SQUARE_BUBBLE: ITooltipBubble = {
 				L ${config.polyWidth} ${config.polyHeight}
 				L ${config.polyWidth} 0
 				L ${config.polyWidth - config.tipOffset / 2} 0
-				L ${config.polyWidth - config.tipWidth} ${-config.tipHeight}
+				L ${config.polyWidth - config.tipPointOffset} ${-config.tipHeight}
 				L ${config.polyWidth - config.tipOffset} 0
 				L 0 0`;
 		} else { // pointDown && tipOnRight
@@ -397,7 +408,7 @@ const SQUARE_BUBBLE: ITooltipBubble = {
 				M 0 0
 				L 0 ${config.polyHeight}
 				L ${config.polyWidth - config.tipOffset} ${config.polyHeight}
-				L ${config.polyWidth - config.tipWidth} ${config.tipHeight + config.polyHeight}
+				L ${config.polyWidth - config.tipPointOffset} ${config.tipHeight + config.polyHeight}
 				L ${config.polyWidth - config.tipOffset / 2} ${config.polyHeight}
 				L ${config.polyWidth} ${config.polyHeight}
 				L ${config.polyWidth} 0
