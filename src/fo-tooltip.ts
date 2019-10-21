@@ -99,7 +99,7 @@ function foreignObjectZoomBugCorrectionFactor(): number {
 // NOTE: You must wrap your html in a <div> so that calculations of size can be done. Also, it gives a good anchor for applying
 //       padding, and other styling, can be applied via CSS.
 export class Tooltip<DatumType> {
-	private static getBoundingRect(content: SVGGraphicsElement, rootNode: SVGSVGElement): {width: number, height: number} {
+	private static getBoundingRect(content: SVGElement, rootNode: SVGSVGElement): {width: number, height: number} {
 		// Get size in element based coords
 		const boundingRect = content.getBoundingClientRect();
 
@@ -132,7 +132,7 @@ export class Tooltip<DatumType> {
 	}
 
 	private readonly tooltipArea: Selection<SVGElement, unknown, null, undefined>;
-	private readonly rootSelection: Selection<SVGSVGElement, unknown, null, undefined>;
+	private readonly rootSelection: SVGSVGElement;
 	private readonly bubbleWidth: number;
 	private readonly bubbleHeight: number;
 	private readonly chartWidth: number;
@@ -150,8 +150,9 @@ export class Tooltip<DatumType> {
 
 	// If bubbleHeight < 0 then go with a dynamically calculated bubble height.
 	constructor(rootSelection: Selection<SVGSVGElement, unknown, null, undefined>, config: ITooltipConfig<DatumType>) {
-		this.rootSelection = rootSelection;
-		this.tooltipArea = rootSelection
+		// We'll generate an exception if rootSelection is null, so let's just let TypeScript ignore that possibility.
+		this.rootSelection = rootSelection.node() as NonNullable<SVGSVGElement>;
+		this.tooltipArea = (rootSelection as any)
 			.append("g")
 				.attr("class", "tooltip-group");
 
@@ -181,7 +182,7 @@ export class Tooltip<DatumType> {
 			// console.log(`d3Event: ${d3.event}`);
 			const tooltip = objThis.getData(d);
 			if(tooltip) {
-				const [x, y] = mouse(objThis.rootSelection.node() as any);
+				const [x, y] = mouse(objThis.rootSelection);
 				// console.log(`mouseover event at ${x}, ${y}`);
 
 				const testContent = objThis.tooltipArea
@@ -196,9 +197,17 @@ export class Tooltip<DatumType> {
 					objThis.calculatedHeight = objThis.bubbleHeight;
 					objThis.calculatedWidth = objThis.bubbleWidth;
 				} else {
-					const bounds = Tooltip.getBoundingRect(testContent.select("div").node() as SVGGraphicsElement, objThis.rootSelection.node());
-					objThis.calculatedHeight = bounds.height;
-					objThis.calculatedWidth = bounds.width;
+					const foDivNode = testContent.select("div").node() as SVGElement;
+
+					if(foDivNode) {
+						const bounds = Tooltip.getBoundingRect(foDivNode, objThis.rootSelection);
+						objThis.calculatedHeight = bounds.height;
+						objThis.calculatedWidth = bounds.width;
+					} else {
+						console.error(`invalid tooltip HTML construction - must have a wrapping div`);
+						objThis.calculatedHeight = objThis.bubbleHeight;
+						objThis.calculatedWidth = objThis.bubbleWidth;
+					}
 				}
 
 				objThis.createTooltip();
@@ -214,7 +223,7 @@ export class Tooltip<DatumType> {
 		return function(d: DatumType) {
 			const tooltip = objThis.getData(d);
 			if(tooltip) {
-				const [x, y] = mouse(objThis.rootSelection.node() as any);
+				const [x, y] = mouse(objThis.rootSelection);
 				// console.log(`mousemove event at ${x}, ${y}`);
 
 				objThis.positionTooltip(x, y);
@@ -229,7 +238,7 @@ export class Tooltip<DatumType> {
 		return function(d: DatumType) {
 			const tooltip = objThis.getData(d);
 			if(tooltip) {
-				const [x, y] = mouse(objThis.rootSelection.node() as any);
+				const [x, y] = mouse(objThis.rootSelection);
 				// console.log(`mouseout event at ${x}, ${y}`);
 
 				objThis.calculatedHeight = 0;
