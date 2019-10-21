@@ -27,6 +27,7 @@ const selection = svg
     .data(yourData);
 
 const tooltipConfig = {
+    rounded: true,
     bubbleWidth: width / 3,
     bubbleHeight: -1, // Let tooltip dynamically figure out the height for you.
     chartWidth: width,
