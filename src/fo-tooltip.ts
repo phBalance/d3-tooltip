@@ -91,7 +91,7 @@ function foreignObjectZoomBugCorrectionFactor(): number {
 // NOTE: You must wrap your html in a <div> so that calculations of size can be done. Also, it gives a good anchor for applying
 //       padding, and other styling, can be applied via CSS.
 export class Tooltip<DatumType> {
-	private static getBoundingHeight(content: SVGGraphicsElement, rootNode: SVGSVGElement): number {
+	private static getBoundingRect(content: SVGGraphicsElement, rootNode: SVGSVGElement): {width: number, height: number} {
 		// Get size in element based coords
 		const boundingRect = content.getBoundingClientRect();
 
@@ -115,12 +115,16 @@ export class Tooltip<DatumType> {
 		// any multiplication, due to Blink bug, in the CSS pixel size to screen pixels from zooming.
 		const zoomFactor = foreignObjectZoomBugCorrectionFactor();
 
-		return (svgPt2.y - svgPt1.y) / zoomFactor;
+		const bounds = {
+			height: (svgPt2.y - svgPt1.y) / zoomFactor,
+			width: (svgPt2.x - svgPt1.x) / zoomFactor,
+		};
+
+		return bounds;
 	}
 
-	// FIXME: Should be configurable
-	private tipOffset = 50;
-	private tip = {w: (3 / 4 * 50), h: 10};
+	private readonly tipOffset = 50;
+	private readonly tip = {w: (3 / 4 * 50), h: 10};
 
 	private readonly tooltipArea: Selection<SVGElement, unknown, null, undefined>;
 	private readonly rootSelection: Selection<SVGSVGElement, unknown, null, undefined>;
@@ -133,7 +137,9 @@ export class Tooltip<DatumType> {
 	private readonly bubbleStroke: string;
 	private readonly bubble: ITooltipBubble;
 	private readonly getData: ITooltipConfigDataFn<DatumType>;
+
 	private calculatedHeight: number;
+	private calculatedWidth: number;
 
 	// If bubbleHeight < 0 then go with a dynamically calculated bubble height.
 	constructor(rootSelection: Selection<SVGSVGElement, unknown, null, undefined>, config: ITooltipConfig<DatumType>) {
@@ -153,6 +159,7 @@ export class Tooltip<DatumType> {
 		this.getData = config.getData;
 
 		this.calculatedHeight = 0;
+		this.calculatedWidth = 0;
 	}
 
 	public mouseoverHandler() {
@@ -174,9 +181,14 @@ export class Tooltip<DatumType> {
 						.attr("height", 1) // Firefox, at this point, requires height >= 1 to calculate children correctly.
 						.html(tooltip);
 
-				objThis.calculatedHeight = objThis.bubbleHeight >= 0
-					? objThis.bubbleHeight
-					: Tooltip.getBoundingHeight(testContent.select("div").node() as SVGGraphicsElement, objThis.rootSelection.node());
+				if(objThis.bubbleHeight >= 0) {
+					objThis.calculatedHeight = objThis.bubbleHeight;
+					objThis.calculatedWidth = objThis.bubbleWidth;
+				} else {
+					const bounds = Tooltip.getBoundingRect(testContent.select("div").node() as SVGGraphicsElement, objThis.rootSelection.node());
+					objThis.calculatedHeight = bounds.height;
+					objThis.calculatedWidth = bounds.width;
+				}
 
 				objThis.createTooltip();
 				objThis.positionTooltip(x, y);
@@ -210,6 +222,7 @@ export class Tooltip<DatumType> {
 				// console.log(`mouseout event at ${x}, ${y}`);
 
 				objThis.calculatedHeight = 0;
+				objThis.calculatedWidth = 0;
 
 				objThis.tooltipArea
 					.select("foreignObject")
@@ -225,8 +238,8 @@ export class Tooltip<DatumType> {
 	private generateBubbleConfig(invertVert: boolean, invertHoriz: boolean): ITooltipBubbleConfig {
 		return {
 			pointDown: invertVert,
-			polyHeight: this.calculatedHeight,
-			polyWidth: this.bubbleWidth,
+			polyHeight: this.calculatedHeight, // excluding tip
+			polyWidth: this.calculatedWidth,
 			tipHeight: this.tip.h,
 			tipOffset: this.tipOffset,
 			tipOnRight: invertHoriz,
@@ -238,7 +251,8 @@ export class Tooltip<DatumType> {
 	private createTooltip(): void {
 		this.tooltipArea
 			.select("foreignObject")
-			.attr("height", this.calculatedHeight);
+			.attr("height", this.calculatedHeight)
+			.attr("width", this.calculatedWidth);
 
 		this.tooltipArea
 			.insert("path", "foreignObject")
@@ -254,8 +268,9 @@ export class Tooltip<DatumType> {
 	private positionTooltip(x: number, y: number): void {
 		let invertVert = false;
 		let invertHoriz = false;
-		if(x + this.bubbleWidth > this.chartWidth) {
-			x = x - this.bubbleWidth;
+
+		if(x + this.calculatedWidth > this.chartWidth) {
+			x = x - this.calculatedWidth;
 			invertHoriz = true;
 		}
 
