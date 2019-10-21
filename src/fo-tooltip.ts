@@ -243,7 +243,7 @@ export class Tooltip<DatumType> {
 			// console.log(`d3Event: ${d3.event}`);
 			const tooltip = objThis.getData(d);
 			if(tooltip) {
-				let [x, y] = mouse(objThis.rootSelection.node() as any);
+				const [x, y] = mouse(objThis.rootSelection.node() as any);
 				// console.log(`mouseover event at ${x}, ${y}`);
 
 				const testContent = objThis.tooltipArea
@@ -258,47 +258,8 @@ export class Tooltip<DatumType> {
 					? objThis.bubbleHeight
 					: Tooltip.getBoundingHeight(testContent.select("div").node() as SVGGraphicsElement, objThis.rootSelection.node());
 
-				// Position the tooltip to keep inside the chart
-				let invertVert = false;
-				let invertHoriz = false;
-				if(x + objThis.bubbleWidth > objThis.chartWidth) {
-					x = x - objThis.bubbleWidth;
-					invertHoriz = true;
-				}
-
-				if(y + objThis.calculatedHeight + objThis.tip.h > objThis.chartHeight) {
-					y = y - objThis.calculatedHeight;
-					invertVert = true;
-				}
-
-				testContent
-					.attr("x", x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))
-					.attr("y", y + (invertVert ? -objThis.tip.h : +objThis.tip.h))
-					.attr("height", objThis.calculatedHeight);
-
-				if(objThis.roundedBubble) {
-					objThis.tooltipArea
-						.insert("path", "foreignObject")
-							.attr("class", "svg-tooltip-outline")
-							.attr("pointer-events", "none")
-							.attr("transform", `translate(${(x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))},${(y + (invertVert ? -objThis.tip.h : +objThis.tip.h))})`)
-							.attr("d", Tooltip.genBubblePath(objThis.generateBubbleconfig(invertVert, invertHoriz)))
-							.attr("fill", objThis.bubbleBackground)
-							.attr("opacity", objThis.bubbleOpacity)
-							.attr("stroke", objThis.bubbleStroke)
-							.attr("stroke-width", objThis.bubbleWidth / 100);
-				} else {
-					objThis.tooltipArea
-						.insert("polygon", "foreignObject")
-							.attr("class", "svg-tooltip-outline")
-							.attr("pointer-events", "none")
-							.attr("transform", `translate(${(x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))},${(y + (invertVert ? -objThis.tip.h : +objThis.tip.h))})`)
-							.attr("width", objThis.bubbleWidth)
-							.attr("height", objThis.calculatedHeight)
-							.attr("points", Tooltip.genBubblePolyPoints(objThis.generateBubbleconfig(invertVert, invertHoriz)))
-							.attr("fill", objThis.bubbleBackground)
-							.attr("opacity", objThis.bubbleOpacity);
-				}
+				objThis.createTooltip();
+				objThis.positionTooltip(x, y);
 			}
 		};
 	}
@@ -310,40 +271,10 @@ export class Tooltip<DatumType> {
 		return function(d: DatumType) {
 			const tooltip = objThis.getData(d);
 			if(tooltip) {
-				let [x, y] = mouse(objThis.rootSelection.node() as any);
+				const [x, y] = mouse(objThis.rootSelection.node() as any);
 				// console.log(`mousemove event at ${x}, ${y}`);
 
-				const calculatedHeight = objThis.calculatedHeight;
-
-				// Position the tooltip to keep inside the chart
-				let invertVert = false;
-				let invertHoriz = false;
-				if(x + objThis.bubbleWidth > objThis.chartWidth) {
-					x = x - objThis.bubbleWidth;
-					invertHoriz = true;
-				}
-
-				if(y + calculatedHeight + objThis.tip.h > objThis.chartHeight) {
-					y = y - calculatedHeight;
-					invertVert = true;
-				}
-
-				if(objThis.roundedBubble) {
-					objThis.tooltipArea
-						.select("path")
-						.attr("d", Tooltip.genBubblePath(objThis.generateBubbleconfig(invertVert, invertHoriz)))
-						.attr("transform", `translate(${(x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))},${(y + (invertVert ? -objThis.tip.h : objThis.tip.h))})`);
-				} else {
-					objThis.tooltipArea
-						.select("polygon")
-						.attr("points", Tooltip.genBubblePolyPoints(objThis.generateBubbleconfig(invertVert, invertHoriz)))
-						.attr("transform", `translate(${(x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))},${(y + (invertVert ? -objThis.tip.h : objThis.tip.h))})`);
-				}
-
-				objThis.tooltipArea
-					.select("foreignObject")
-					.attr("x", x + (invertHoriz ? objThis.tip.w : -objThis.tip.w))
-					.attr("y", y + (invertVert ? -objThis.tip.h : objThis.tip.h));
+				objThis.positionTooltip(x, y);
 			}
 		};
 	}
@@ -366,18 +297,18 @@ export class Tooltip<DatumType> {
 
 				if(objThis.roundedBubble) {
 					objThis.tooltipArea
-					.select("path")
-						.remove();
+						.select("path")
+							.remove();
 				} else {
 					objThis.tooltipArea
-					.select("polygon")
-						.remove();
+						.select("polygon")
+							.remove();
 				}
 			}
 		};
 	}
 
-	private generateBubbleconfig(invertVert: boolean, invertHoriz: boolean): ITooltipBubbleConfig {
+	private generateBubbleConfig(invertVert: boolean, invertHoriz: boolean): ITooltipBubbleConfig {
 		return {
 			pointDown: invertVert,
 			polyHeight: this.calculatedHeight,
@@ -387,5 +318,64 @@ export class Tooltip<DatumType> {
 			tipOnRight: invertHoriz,
 			tipWidth: this.tip.w,
 		};
+	}
+
+	// Create the bubble
+	private createTooltip(): void {
+		this.tooltipArea
+			.select("foreignObject")
+			.attr("height", this.calculatedHeight);
+
+		if(this.roundedBubble) {
+			this.tooltipArea
+				.insert("path", "foreignObject")
+					.attr("class", "svg-tooltip-outline")
+					.attr("pointer-events", "none")
+					.attr("fill", this.bubbleBackground)
+					.attr("opacity", this.bubbleOpacity)
+					.attr("stroke", this.bubbleStroke)
+					.attr("stroke-width", this.bubbleWidth / 100);
+		} else {
+			this.tooltipArea
+				.insert("polygon", "foreignObject")
+					.attr("class", "svg-tooltip-outline")
+					.attr("pointer-events", "none")
+					.attr("width", this.bubbleWidth)
+					.attr("height", this.calculatedHeight)
+					.attr("fill", this.bubbleBackground)
+					.attr("opacity", this.bubbleOpacity);
+		}
+	}
+
+	// Position the tooltip to keep inside the chart
+	private positionTooltip(x: number, y: number): void {
+		let invertVert = false;
+		let invertHoriz = false;
+		if(x + this.bubbleWidth > this.chartWidth) {
+			x = x - this.bubbleWidth;
+			invertHoriz = true;
+		}
+
+		if(y + this.calculatedHeight + this.tip.h > this.chartHeight) {
+			y = y - this.calculatedHeight;
+			invertVert = true;
+		}
+
+		if(this.roundedBubble) {
+			this.tooltipArea
+				.select("path")
+				.attr("d", Tooltip.genBubblePath(this.generateBubbleConfig(invertVert, invertHoriz)))
+				.attr("transform", `translate(${(x + (invertHoriz ? this.tip.w : -this.tip.w))},${(y + (invertVert ? -this.tip.h : this.tip.h))})`);
+		} else {
+			this.tooltipArea
+				.select("polygon")
+				.attr("points", Tooltip.genBubblePolyPoints(this.generateBubbleConfig(invertVert, invertHoriz)))
+				.attr("transform", `translate(${(x + (invertHoriz ? this.tip.w : -this.tip.w))},${(y + (invertVert ? -this.tip.h : this.tip.h))})`);
+		}
+
+		this.tooltipArea
+			.select("foreignObject")
+			.attr("x", x + (invertHoriz ? this.tip.w : -this.tip.w))
+			.attr("y", y + (invertVert ? -this.tip.h : this.tip.h));
 	}
 }
