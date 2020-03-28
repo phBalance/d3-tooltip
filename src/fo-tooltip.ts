@@ -152,9 +152,16 @@ export class Tooltip<DatumType> {
 	constructor(rootSelection: Selection<SVGSVGElement, unknown, null, undefined>, config: ITooltipConfig<DatumType>) {
 		// We'll generate an exception if rootSelection is null, so let's just let TypeScript ignore that possibility.
 		this.rootSelection = rootSelection.node() as NonNullable<SVGSVGElement>;
-		this.tooltipArea = (rootSelection as any)
-			.append("g")
-				.attr("class", "tooltip-group");
+
+		// Reuse an existing group where it exists. Create if it doesn't.
+		this.tooltipArea = rootSelection
+			.select("g.tooltip-group");
+
+		if(this.tooltipArea.empty()) {
+			this.tooltipArea = (rootSelection as any)
+				.append("g")
+					.attr("class", "tooltip-group");
+		}
 
 		this.chartWidth = config.chartWidth;
 		this.chartHeight = config.chartHeight;

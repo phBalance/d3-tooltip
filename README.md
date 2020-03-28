@@ -9,6 +9,7 @@ Add tooltips to your [D3](https://d3js.org/) charts. Implemented using [TypeScri
 
 ```
 npm install --save @phbalance/d3-tooltip
+npm install --save color # peer dependency of a library
 ```
 
 ### Use
@@ -54,6 +55,8 @@ selection
 ```
 
 ### API
+
+When creating a new Tooltip you pass in the svg that needs the tooltips. Inside this svg, the Tooltip will create a `g` element with a class of `tooltip-group`. Creating Tooltip (i.e. `new Tooltip(svg, ...)`) more than once is fine with the same svg as it will reuse an already existing `g.tooltip-group`.
 
 The generated tooltip object contains 3 event handlers. You will want to bind at least the mouseover and mouseout handlers, but if you don't want your tooltip to follow the mouse around inside the selection, you don't need to bind it. If you don't being the mousemove, the tooltip will be pointing to the spot you entered the selection.
 
