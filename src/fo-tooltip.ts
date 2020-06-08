@@ -41,19 +41,18 @@ export interface ITooltipBubbleConfig {
 // Create 2 "hidden" areas that we can use to compare sizing.
 const bugClassName = "tooltip-fo-zoom-bug-detect";
 const divContent = "The size should match";
-const bugWidth = "100";
+const bugWidth = "200";
 const bugHeight = "1";
-const divStyle = "all: unset; visibility:hidden; position: absolute";
+const divStyle = "all: unset; visibility:hidden; position: absolute; display: block; width: 200px;";
 const div = document.createElement("div");
 div.setAttribute("class", bugClassName);
-div.setAttribute("style", "all: unset; visibility:hidden; position: absolute; display: block");
-div.setAttribute("width", bugWidth);
+div.setAttribute("style", divStyle);
 div.innerHTML = divContent;
 
 document.body.appendChild(div);
 
 const svgDiv = document.createElement("div");
-svgDiv.setAttribute("style", "all: unset; visibility:hidden; position: absolute; display: block");
+svgDiv.setAttribute("style", divStyle);
 svgDiv.setAttribute("class", bugClassName);
 
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -75,20 +74,17 @@ function foreignObjectZoomBugCorrectionFactor(): number {
 	const foDivBound = foDiv.getBoundingClientRect();
 	const divBound = div.getBoundingClientRect();
 
-	// FIXME: Why is there this a magic multiple of 2?
 	// Calculate the difference and scale things by this value.
 	// It would have been nice to use devicePixelRatio, but that doesn't work on Safari.
-	let zoomMultiple = foDivBound.height / (2 * divBound.height);
+	let zoomMultiple = foDivBound.height / divBound.height;
 
 	// console.error(`fo: ${JSON.stringify(foDivBound.height)} div: ${JSON.stringify(divBound.height)}
 	// 	ratio: ${window.devicePixelRatio} multiple: ${zoomMultiple}`);
 
-	// FIXME: Firefox calculates things incorrectly when zoom < 80%. A bug for sure. Might have to do with their poor text kerning.
-	//        I can't see an easy way to work around this. Using the work around for chrome fixes helps at some, but not all, zoom values.
-	// FIXME: Safari calculates things incorrectly when zoom < 75%.
-
-	// FIXME: Chrome doesn't agree between devicePixelRatio and zoomMultiple when zoom < 50%! But, it does >= 50% to 500%
-	if(zoomMultiple < 0.5 && window.devicePixelRatio < 0.5) {
+	// Firefox says the zoomMultiple is 1 regardless of zoom factor and we want to use the value of 1.
+	// Chrome says the zoomMultiple is something close to window.devicePixelRatio but wrong probably due to some kind of internal rounding. We want to use window.devicePixelRatio.
+	// Not sure about Safari.
+	if(zoomMultiple !== 1) {
 		zoomMultiple = window.devicePixelRatio;
 	}
 
