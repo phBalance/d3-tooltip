@@ -82,7 +82,8 @@ function foreignObjectZoomBugCorrectionFactor(): number {
 	// 	ratio: ${window.devicePixelRatio} multiple: ${zoomMultiple}`);
 
 	// Firefox says the zoomMultiple is 1 regardless of zoom factor and we want to use the value of 1.
-	// Chrome says the zoomMultiple is something close to window.devicePixelRatio but wrong probably due to some kind of internal rounding. We want to use window.devicePixelRatio.
+	// Chrome says the zoomMultiple is something close to window.devicePixelRatio but wrong probably
+	//        due to some kind of internal rounding. We want to use window.devicePixelRatio.
 	// Not sure about Safari.
 	if(zoomMultiple !== 1) {
 		zoomMultiple = window.devicePixelRatio;
