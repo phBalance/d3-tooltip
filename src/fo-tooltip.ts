@@ -288,7 +288,9 @@ export class Tooltip<DatumType> {
 				.attr("fill", this.bubbleBackground)
 				.attr("opacity", this.bubbleOpacity)
 				.attr("stroke", this.bubbleStroke)
-				.attr("stroke-width", this.bubbleStrokeWidth);
+				.attr("stroke-width", this.bubbleStrokeWidth)
+				.attr("stroke-linecap", "square")
+				.attr("stroke-linejoin", "miter");
 	}
 
 	// Position the tooltip to keep inside the chart
