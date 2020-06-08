@@ -171,7 +171,7 @@ export class Tooltip<DatumType> {
 		this.bubbleBackground = config.backgroundColour;
 		this.bubbleOpacity = config.backgroundOpacity;
 		this.bubbleStroke = config.bubbleStroke || chooseHighestContrastColour(config.backgroundColour, config.backgroundOpacity);
-		this.bubbleStrokeWidth = (config.bubbleStrokeWidth || (this.bubbleWidth / 100)).toString();
+		this.bubbleStrokeWidth = (config.bubbleStrokeWidth || Math.floor(this.bubbleWidth / 100)).toString();
 		this.bubble = config.rounded ? ROUNDED_BUBBLE : SQUARE_BUBBLE;
 		this.bubbleTip = Object.assign({tipOffset: (3 / 4 * 50), h: 10, edgeOffset: 50}, config.bubbleTip);
 
