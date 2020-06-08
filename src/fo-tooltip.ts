@@ -327,7 +327,7 @@ interface ITooltipBubble {
 const ROUNDED_BUBBLE: ITooltipBubble = {
 	outline(config: ITooltipBubbleConfig): string {
 		const smallerDim = Math.min(config.polyHeight, config.polyWidth);
-		const radius = smallerDim < 100 ? smallerDim / 5 : 10;
+		const radius = smallerDim / 5;
 
 		if(!config.pointDown && !config.tipOnRight) {
 			return oneLine`
