@@ -38,14 +38,14 @@
     "@types/common-tags": "^1.8.0",
     "@types/d3": "^5.7.2",
     "d3-selection": "^1.4.1",
-    "np": "^6.2.0",
+    "np": "^6.2.4",
     "rimraf": "^3.0.2",
-    "rollup": "^2.2.0",
-    "rollup-plugin-sourcemaps": "^0.5.0",
-    "rollup-plugin-terser": "^5.3.0",
-    "rollup-plugin-typescript2": "^0.27.0",
-    "tslint": "^6.1.0",
-    "typescript": "^3.8.3"
+    "rollup": "^2.15.0",
+    "rollup-plugin-sourcemaps": "^0.6.2",
+    "rollup-plugin-terser": "^6.1.0",
+    "rollup-plugin-typescript2": "^0.27.1",
+    "tslint": "^6.1.2",
+    "typescript": "^3.9.5"
   },
   "dependencies": {
     "@phbalance/contrast-colour": "^0.0.4",
