@@ -43,10 +43,11 @@ const bugClassName = "tooltip-fo-zoom-bug-detect";
 const divContent = "The size should match";
 const bugWidth = "200";
 const bugHeight = "1";
-const divStyle = "all: unset; visibility:hidden; position: absolute; display: block; width: 200px;";
+const divStyle = "all: unset; visibility: hidden; position: fixed; display: block; width: 200px;";
 const div = document.createElement("div");
 div.setAttribute("class", bugClassName);
 div.setAttribute("style", divStyle);
+div.setAttribute('aria-hidden', "true");
 div.innerHTML = divContent;
 
 document.body.appendChild(div);
@@ -54,6 +55,7 @@ document.body.appendChild(div);
 const svgDiv = document.createElement("div");
 svgDiv.setAttribute("style", divStyle);
 svgDiv.setAttribute("class", bugClassName);
+svgDiv.setAttribute('aria-hidden', "true");
 
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
