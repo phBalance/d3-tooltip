@@ -1,6 +1,6 @@
 {
   "name": "@phbalance/d3-tooltip",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "description": "Small library for generating svg tooltips using foreignObject.",
   "main": "fo-tooltip.js",
   "module": "fo-tooltip.es6.js",
