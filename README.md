@@ -2,14 +2,20 @@
 
 Add tooltips to your [D3](https://d3js.org/) charts. Implemented using [TypeScript](https://www.typescriptlang.org/).
 
+Version 0.1.2 is the last version that supports D3 versions 1 through 5 (i.e. version that use d3-selection@1). Versions 1.0.1+ supports D3 versions 6+.
+
 ## Getting Started
 
 
 ### Installation
-
-```
+```sh
 npm install --save @phbalance/d3-tooltip
-npm install --save color # peer dependency of a library
+```
+
+Prior to version 1.0 you needed to install the peer `d3-selection` yourself although NPM 7 does this for you now. 
+```sh
+npm install --save @phbalance/d3-tooltip
+npm install --save d3-selection # peer dependency of a library
 ```
 
 ### Use
