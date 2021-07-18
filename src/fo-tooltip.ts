@@ -1,6 +1,6 @@
 import { chooseHighestContrastColour } from "@phbalance/contrast-colour";
 import { oneLine } from "common-tags";
-import { mouse, Selection } from "d3-selection";
+import { pointer, Selection } from "d3-selection";
 
 export type ITooltipConfigDataFn<DatumType> = (d: DatumType) => string | undefined;
 
@@ -184,11 +184,10 @@ export class Tooltip<DatumType> {
 		const objThis = this;
 
 		// NOTE: This function will be called with different "this" - it is not the object this
-		return function(d: DatumType) {
-			// console.log(`d3Event: ${d3.event}`);
+		return function(event: any, d: any) { // DatumType & Event Type?
 			const tooltip = objThis.getData(d);
 			if(tooltip) {
-				const [x, y] = mouse(objThis.rootSelection);
+				const [x, y] = pointer(event, objThis.rootSelection);
 				// console.log(`mouseover event at ${x}, ${y}`);
 
 				const testContent = objThis.tooltipArea
@@ -226,10 +225,10 @@ export class Tooltip<DatumType> {
 		const objThis = this;
 
 		// NOTE: This function will be called with different "this" - it is not the object this
-		return function(d: DatumType) {
+		return function(event: any, d: any) { // DatumType & Event Type?
 			const tooltip = objThis.getData(d);
 			if(tooltip) {
-				const [x, y] = mouse(objThis.rootSelection);
+				const [x, y] = pointer(event, objThis.rootSelection);
 				// console.log(`mousemove event at ${x}, ${y}`);
 
 				objThis.positionTooltip(x, y);
@@ -241,10 +240,10 @@ export class Tooltip<DatumType> {
 		const objThis = this;
 
 		// NOTE: This function will be called with different "this" which is not the object this
-		return function(d: DatumType) {
+		return function(event: any, d: any) { // DatumType & Event Type?
 			const tooltip = objThis.getData(d);
 			if(tooltip) {
-				const [x, y] = mouse(objThis.rootSelection);
+				const [x, y] = pointer(event, objThis.rootSelection);
 				// console.log(`mouseout event at ${x}, ${y}`);
 
 				objThis.calculatedHeight = 0;
