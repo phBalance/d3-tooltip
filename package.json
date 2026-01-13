@@ -34,7 +34,7 @@
   "devDependencies": {
     "@types/common-tags": "^1.8.1",
     "@types/d3-selection": "^2.0.1",
-    "np": "^7.5.0",
+    "np": "^10.2.0",
     "rimraf": "^3.0.2",
     "rollup": "^2.53.2",
     "rollup-plugin-sourcemaps": "^0.6.3",
